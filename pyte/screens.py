@@ -245,6 +245,7 @@ class Screen:
         self.columns = columns
         self.lines = lines
         self.buffer: dict[int, StaticDefaultDict[int, Char]] = defaultdict(lambda: StaticDefaultDict[int, Char](self.default_char))
+        self.top_buffer = []
         self.dirty: set[int] = set()
         self.reset()
         self.mode = _DEFAULT_MODE.copy()
@@ -253,7 +254,10 @@ class Screen:
     def __repr__(self) -> str:
         return ("{}({}, {})".format(self.__class__.__name__,
                                        self.columns, self.lines))
-
+    @property
+    def all_buffer(self) -> list:
+        return self.top_buffer + [self.buffer[key] for key in self.buffer.keys()]
+        
     @property
     def display(self) -> list[str]:
         """A :func:`list` of screen lines as unicode strings."""
@@ -583,6 +587,7 @@ class Screen:
         if self.cursor.y == bottom:
             # TODO: mark only the lines within margins?
             self.dirty.update(range(self.lines))
+            self.top_buffer.append(self.buffer[top])
             for y in range(top, bottom):
                 self.buffer[y] = self.buffer[y + 1]
             self.buffer.pop(bottom, None)
