@@ -255,8 +255,8 @@ class Screen:
         return ("{}({}, {})".format(self.__class__.__name__,
                                        self.columns, self.lines))
     @property
-    def all_buffer(self) -> list:
-        return self.top_buffer + [self.buffer[key] for key in self.buffer.keys()]
+    def all_buffer(self) -> list[dict[int, Char]]:
+        return self.top_buffer + [self.buffer[x] for x in range(self.lines)]
         
     @property
     def display(self) -> list[str]:
