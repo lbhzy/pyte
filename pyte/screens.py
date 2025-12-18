@@ -247,6 +247,7 @@ class Screen:
         self.buffer: dict[int, StaticDefaultDict[int, Char]] = defaultdict(lambda: StaticDefaultDict[int, Char](self.default_char))
         self.alt_buffer: dict[int, StaticDefaultDict[int, Char]] = defaultdict(lambda: StaticDefaultDict[int, Char](self.default_char))
         self.alt_cursor = Cursor(0, 0)
+        self.alt_top_buffer = []
         self.top_buffer = []
         self.dirty: set[int] = set()
         self.reset()
@@ -408,6 +409,7 @@ class Screen:
             if mo.DECALTBUF in mode_list:
                 self.buffer, self.alt_buffer = self.alt_buffer, self.buffer
                 self.cursor, self.alt_cursor = self.alt_cursor, self.cursor
+                self.top_buffer, self.alt_top_buffer = self.alt_top_buffer, self.top_buffer
 
         self.mode.update(mode_list)
 
@@ -452,8 +454,10 @@ class Screen:
             if mo.DECALTBUF in mode_list:
                 self.buffer, self.alt_buffer = self.alt_buffer, self.buffer
                 self.cursor, self.alt_cursor = self.alt_cursor, self.cursor
+                self.top_buffer, self.alt_top_buffer = self.alt_top_buffer, self.top_buffer
                 self.alt_buffer.clear()
                 self.alt_cursor = Cursor(0, 0)
+                self.alt_top_buffer.clear()
 
         self.mode.difference_update(mode_list)
 
