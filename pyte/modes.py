@@ -57,3 +57,6 @@ DECAWM = 7 << 5
 #: *Column Mode*: selects the number of columns per line (80 or 132)
 #: on the screen.
 DECCOLM = 3 << 5
+
+# 备用屏幕缓冲区
+DECALTBUF = 1049 << 5

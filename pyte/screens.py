@@ -245,6 +245,8 @@ class Screen:
         self.columns = columns
         self.lines = lines
         self.buffer: dict[int, StaticDefaultDict[int, Char]] = defaultdict(lambda: StaticDefaultDict[int, Char](self.default_char))
+        self.alt_buffer: dict[int, StaticDefaultDict[int, Char]] = defaultdict(lambda: StaticDefaultDict[int, Char](self.default_char))
+        self.alt_cursor = Cursor(0, 0)
         self.top_buffer = []
         self.dirty: set[int] = set()
         self.reset()
@@ -403,6 +405,9 @@ class Screen:
             mode_list = [mode << 5 for mode in modes]
             if mo.DECSCNM in mode_list:
                 self.dirty.update(range(self.lines))
+            if mo.DECALTBUF in mode_list:
+                self.buffer, self.alt_buffer = self.alt_buffer, self.buffer
+                self.cursor, self.alt_cursor = self.alt_cursor, self.cursor
 
         self.mode.update(mode_list)
 
@@ -444,6 +449,11 @@ class Screen:
             mode_list = [mode << 5 for mode in modes]
             if mo.DECSCNM in mode_list:
                 self.dirty.update(range(self.lines))
+            if mo.DECALTBUF in mode_list:
+                self.buffer, self.alt_buffer = self.alt_buffer, self.buffer
+                self.cursor, self.alt_cursor = self.alt_cursor, self.cursor
+                self.alt_buffer.clear()
+                self.alt_cursor = Cursor(0, 0)
 
         self.mode.difference_update(mode_list)
 
