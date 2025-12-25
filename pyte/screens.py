@@ -344,16 +344,26 @@ class Screen:
 
         self.dirty.update(range(lines))
 
-        if lines < self.lines:
-            self.save_cursor()
-            self.cursor_position(0, 0)
-            self.delete_lines(self.lines - lines)  # Drop from the top.
-            self.restore_cursor()
+        line_index = lines - 1
+        if self.cursor.y > line_index:
+            for i in range(self.cursor.y - line_index):
+                self.top_buffer.append(self.buffer[i])
+            temp = defaultdict(lambda: StaticDefaultDict[int, Char](self.default_char))
+            for i in range(line_index + 1):
+                temp[i] = self.buffer[i + self.cursor.y - line_index]
+            self.buffer = temp
+            self.cursor.y = line_index
+            
+        # if lines < self.lines:
+        #     self.save_cursor()
+        #     self.cursor_position(0, 0)
+        #     self.delete_lines(self.lines - lines)  # Drop from the top.
+        #     self.restore_cursor()
 
-        if columns < self.columns:
-            for line in self.buffer.values():
-                for x in range(columns, self.columns):
-                    line.pop(x, None)
+        # if columns < self.columns:
+        #     for line in self.buffer.values():
+        #         for x in range(columns, self.columns):
+        #             line.pop(x, None)
 
         self.lines, self.columns = lines, columns
         self.set_margins()
