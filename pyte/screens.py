@@ -240,7 +240,7 @@ class Screen:
         reverse = mo.DECSCNM in self.mode
         return Char(data=" ", fg="default", bg="default", reverse=reverse)
 
-    def __init__(self, columns: int, lines: int) -> None:
+    def __init__(self, columns: int, lines: int, history_max: int = 100000) -> None:
         self.savepoints: list[Savepoint] = []
         self.columns = columns
         self.lines = lines
@@ -248,7 +248,7 @@ class Screen:
         self.alt_buffer: dict[int, StaticDefaultDict[int, Char]] = defaultdict(lambda: StaticDefaultDict[int, Char](self.default_char))
         self.alt_cursor = Cursor(0, 0)
         self.alt_top_buffer = []
-        self.top_buffer = []
+        self.top_buffer = deque(maxlen=history_max)
         self.dirty: set[int] = set()
         self.reset()
         self.mode = _DEFAULT_MODE.copy()
@@ -259,7 +259,7 @@ class Screen:
                                        self.columns, self.lines))
     @property
     def all_buffer(self) -> list[dict[int, Char]]:
-        return self.top_buffer + [self.buffer[x] for x in range(self.lines)]
+        return list(self.top_buffer) + [self.buffer[x] for x in range(self.lines)]
         
     @property
     def display(self) -> list[str]:
