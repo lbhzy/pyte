@@ -163,6 +163,43 @@ class StaticDefaultDict(dict[KT, VT]):
 
 _DEFAULT_MODE = {mo.DECAWM, mo.DECTCEM}
 
+class ListDeque:
+    """动态生长的环形缓冲区，比 deque 有更快的随机读取性能"""
+    def __init__(self, maxlen=10000):
+        self.buffer = []
+        self.maxlen = maxlen
+        self.head = 0
+
+    def append(self, value):
+        if len(self.buffer) < self.maxlen:
+            # 未达到最大长度限制，动态增长，
+            self.buffer.append(value)
+        else:
+            # 到最大长度限制，覆盖头部数据
+            self.buffer[self.head] = value
+            self.head = (self.head + 1) % self.maxlen
+
+    def __len__(self):
+        return len(self.buffer)
+
+    def __getitem__(self, key):
+        buffer_len = len(self.buffer)
+        if isinstance(key, slice):
+            # 处理切片
+            start, stop, step = key.indices(buffer_len)
+            return [
+                self.buffer[((i + self.head) % buffer_len)]
+                for i in range(start, stop, step)
+            ]
+        elif isinstance(key, int):
+            # 处理单个索引
+            if key < 0:
+                key += buffer_len
+            if key < 0 or key >= buffer_len:
+                raise IndexError("index out of range")
+            return self.buffer[(key + self.head) % buffer_len]
+        else:
+            raise TypeError("Invalid argument type")
 
 class Screen:
     """
@@ -240,7 +277,7 @@ class Screen:
         reverse = mo.DECSCNM in self.mode
         return Char(data=" ", fg="default", bg="default", reverse=reverse)
 
-    def __init__(self, columns: int, lines: int, history_max: int = 100000) -> None:
+    def __init__(self, columns: int, lines: int, history_maxlen: int = 100000) -> None:
         self.savepoints: list[Savepoint] = []
         self.columns = columns
         self.lines = lines
@@ -248,7 +285,7 @@ class Screen:
         self.alt_buffer: dict[int, StaticDefaultDict[int, Char]] = defaultdict(lambda: StaticDefaultDict[int, Char](self.default_char))
         self.alt_cursor = Cursor(0, 0)
         self.alt_top_buffer = []
-        self.top_buffer = deque(maxlen=history_max)
+        self.top_buffer = ListDeque(maxlen=history_maxlen)
         self.dirty: set[int] = set()
         self.reset()
         self.mode = _DEFAULT_MODE.copy()
@@ -257,9 +294,15 @@ class Screen:
     def __repr__(self) -> str:
         return ("{}({}, {})".format(self.__class__.__name__,
                                        self.columns, self.lines))
-    @property
-    def all_buffer(self) -> list[dict[int, Char]]:
-        return list(self.top_buffer) + [self.buffer[x] for x in range(self.lines)]
+
+    def get_screen_buffer(self, start: int) -> list[dict[int, Char]]:
+        bottom_buffer = [self.buffer[x] for x in range(self.lines)]
+
+        if start + self.lines < len(self.top_buffer):
+            screen_buffer = self.top_buffer[start : start + self.lines]
+        else:
+            screen_buffer = self.top_buffer[start:] + bottom_buffer[: start + self.lines]
+        return screen_buffer
         
     @property
     def display(self) -> list[str]:
